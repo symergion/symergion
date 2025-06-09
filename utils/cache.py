@@ -1,20 +1,19 @@
 from functools import wraps
 
 
-def lru_cache(max_size_field):
-    """ A decorator, cache a function's return value.
+def in_memory_cache(max_size_field):
+    """ A decorator, cache a class method's return value in memory.
     If max size is already reached remove one old cached value before cache new.
     No threading support.
 
     Args:
-        max_size_field (str): The name of the attribute in
-                              the first positional argument that
+        max_size_field (str): The name of the class attribute that
                               specifies the maximum cache size.
     """
 
     cache = {}
 
-    @wraps(lru_cache)
+    @wraps(in_memory_cache)
     def decorator(func):
         @wraps(func)
         def wrapped(*args, **kwargs):

@@ -17,7 +17,7 @@ def get_test_config():
         "code_starter": "import unittest\n"
     }
     handler_config = {
-        "cache_size": 1,
+        "model_cache_size": 1,
         "response_cache_size": 100,
         "ntokens": 128,
         "default_branch": "main",

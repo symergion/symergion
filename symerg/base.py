@@ -3,7 +3,7 @@ from abc import abstractmethod
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from observer import Observer
-from utils import lru_cache
+from utils import in_memory_cache
 
 
 class SymErg(Observer):
@@ -19,17 +19,17 @@ class SymErg(Observer):
         - request Ergons to complete actions
     """
 
-    def __init__(self, checkpoint, cache_size, response_cache_size, ntokens):
+    def __init__(self, checkpoint, model_cache_size, response_cache_size, ntokens):
         """Initialize the SymErg instance.
 
         Args:
             checkpoint (dict): the checkpoint specification.
-            cache_size (int): the size of the loaded models cache.
+            model_cache_size (int): the size of the loaded models cache.
             response_cache_size (int): the size of the response cache.
             ntokens (int): the number of tokens.
         """
         self._checkpoint = checkpoint
-        self._cache_size = cache_size
+        self._model_cache_size = model_cache_size
         self._response_cache_size = response_cache_size
         self._ntokens = ntokens
 
@@ -121,7 +121,7 @@ class SymErg(Observer):
         estimate = capacity - capacity_diff * math.exp(-encodings_len / capacity_diff)
         return round(estimate), capacity
 
-    @lru_cache("_cache_size")
+    @in_memory_cache("_model_cache_size")
     def get_model(self, name_or_path):
         """Load the pre-trained model from the specified checkpoint.
 
@@ -134,7 +134,7 @@ class SymErg(Observer):
         print(f"Model to be loaded: {name_or_path}")
         return AutoModelForCausalLM.from_pretrained(name_or_path)
 
-    @lru_cache("_cache_size")
+    @in_memory_cache("_model_cache_size")
     def get_tokenizer(self, name_or_path):
         """Load the pre-trained tokenizer from the specified checkpoint.
 

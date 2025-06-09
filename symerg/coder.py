@@ -5,7 +5,7 @@ import torch
 from ergon.code import ErgonCode
 from ergon.prompt import Prompt
 from symerg.base import SymErg
-from utils.cache import lru_cache
+from utils.cache import in_memory_cache
 
 
 class SymErgCoder(SymErg):
@@ -105,7 +105,7 @@ class SymErgCoder(SymErg):
         for ergon in ergons:
             ergon.update(message)
 
-    @lru_cache("_response_cache_size")
+    @in_memory_cache("_response_cache_size")
     def generate(self, prompt):
         """Generates code based on the given prompt.
 

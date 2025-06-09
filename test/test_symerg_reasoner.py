@@ -27,13 +27,13 @@ class TestSymErgReasoner(unittest.TestCase):
             "reasoning_start_tokens": [1, 2, 3],
             "reasoning_stop_tokens": [4, 5, 6]
         }
-        self.cache_size = 1
+        self.model_cache_size = 1
         self.response_cache_size = 10
         self.ntokens = 100
         self.symerg_reasoner = SymErgReasoner(
             self.checkpoint,
             **{
-                "cache_size": self.cache_size,
+                "model_cache_size": self.model_cache_size,
                 "response_cache_size": self.response_cache_size,
                 "ntokens": self.ntokens
             }

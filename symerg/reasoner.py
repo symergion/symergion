@@ -3,7 +3,7 @@ import torch
 import regex as re
 
 from symerg.base import SymErg
-from utils.cache import lru_cache
+from utils.cache import in_memory_cache
 
 
 class SymErgReasoner(SymErg):
@@ -133,7 +133,7 @@ class SymErgReasoner(SymErg):
         stop_tokens = ids[-1][-self.stop_tokens_len:] == torch.Tensor(self.reasoning_stop_tokens)
         return min(stop_tokens).item() and ids.shape[-1] > length + self.stop_tokens_len
 
-    @lru_cache("_response_cache_size")
+    @in_memory_cache("_response_cache_size")
     def generate(self, prompt):
         """Generate a response based on the given prompt.
 

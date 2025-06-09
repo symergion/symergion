@@ -71,7 +71,7 @@ Steps 2 and 3 (if necessary) should be repeated untill a satisfactory result is 
 ### Deployment
 
 #### Build Docker Image
-To deploy Symergion, get the Linux docker image of your preference, having git, Python>=3.10.13, PyTorch>=2.2.1, Transformers>=4.50.3 installed and pass it as a `docker build` command argument running in your symergion directory:
+To deploy Symergion, get the Linux docker image of your preference, having git, Python>=3.10.13, PyTorch>=2.2.1, Transformers>=4.51.3 installed and pass it as a `docker build` command argument running in your symergion directory:
 ```bash
 docker build --build-arg BASE_CONTAINER="image-of-your-preference" -t symergion:latest .
 ```
@@ -83,35 +83,29 @@ Example of config settings (specific SLMs are selected for illustration purposes
 ```json
 {
   "idle_cores": 4,
-  "cache_size": 1,
+  "model_cache_size": 1,
   "response_cache_size": 100,
   "ntokens": 128,
   "default_branch": "main",
   "task_branch_spec": "task_branch:[\\s]*([\\p{L}\\p{N}_\\-\\.\\/]+)",
   "checkpoints": [
     {
-      "name_or_path": "Qwen2.5-Coder-7B",
+      "name_or_path": "Qwen3-4B-Base",
       "trait": "coding"
     },
     {
-      "name_or_path": "granite-3.1-3b-a800m-base",
+      "name_or_path": "granite-3.3-2b-base",
       "trait": "coding"
     }
     {
-      "name_or_path": "granite-3.2-2b-instruct",
+      "name_or_path": "Qwen3-1.7B",
       "trait": "reasoning",
       "reasoning_start_tokens": [
-        10921,
-        438,
-        1672,
-        10889,
-        2164,
-        44,
-        203
+        151667,
+        198
       ],
       "reasoning_stop_tokens": [
-        203,
-        10921
+        151668
       ]
     }
   ],
@@ -132,7 +126,7 @@ Here:
 ##### `idle_cores`
 Specifies the quantity of CPU cores that will not be allocated to Pytorch threads. It should be set based on balancing CPU resource needs for other tasks, your CPU tolerance to overheating and expected generation speed.
 
-##### `cache_size`
+##### `model_cache_size`
 Specifies the number of SLMs to be cached.
 
 ##### `response_cache_size`
@@ -152,6 +146,7 @@ Is the task branch name specification.
 
 ##### `checkpoints`
 Is a list of SLMs checkpoints to be used.
+Note: as a coding model use base model.
 
 ###### `name_or_path`
 Is the particular model checkpoint path within the models directory.
@@ -206,52 +201,52 @@ git branch TestCase_capture_output
 #### Annotate Ergon Branch with Initial Note
 Annotation of the `TestCase_capture_output` branch with an initial note. Based on our configuration file, this should be:
 ```bash
-git notes add -m "task_branch: TestCase_capture_output, source: utils/capture_output.py, destination: test_capture_output.py"
+git notes add -m "task_branch: TestCase_capture_output, source: utils/capture_output.py, destination: test_capture_output.py" TestCase_capture_output
 ```
-It has been seen that model `granite-3.2-2b-instruct` was loaded and generated reasoning based on the cooked prompt. Note that the cooked prompt is enriched with the code from the source and destination (if exists) files. In my case, it took `granite-3.2-2b-instruct` 75.3s to generate 280 new tokens. The reasoning part was used to enrich the prompt.
+It has been seen that model `Qwen3-1.7B` was loaded and reasoning was generated based on the cooked prompt. Note that the cooked prompt is enriched with the code from the source and destination (if exists) files. In my case, it took `Qwen3-1.7B` 106.1s to generate 744 new tokens. The reasoning part was used to enrich the prompt.
 
-Than it has been seen that models `Qwen2.5-Coder-7B` and `granite-3.1-3b-a800m-base` are being loaded and started generating responses for the given enriched prompt.
-It took `Qwen2.5-Coder-7B` 66.3s to generate 63 new tokens and it took `granite-3.1-3b-a800m-base` 119.7s to generate 681 new tokens.
+Then it has been seen that models `Qwen3-4B-Base` and `granite-3.3-2b-base` are being loaded and started generating responses for the given enriched prompt.
+It took `Qwen3-4B-Base` 165.7s to generate 406 new tokens and it took `granite-3.3-2b-base` 488.1s to generate 1620 new tokens.
 
 #### Review Results
-Once generation is completed it has been seen that SymErg branches `Qwen2.5-Coder-7B_TestCase_capture_output` and `granite-3.1-3b-a800m-base_TestCase_capture_output` were created by SymErgion.
+Once generation is completed it has been seen that SymErg branches `Qwen3-4B-Base_TestCase_capture_output` and `granite-3.3-2b-base_TestCase_capture_output` were created by SymErgion.
 
 The review of the results for the both models, starts with prompts cooked and enriched with the reasoning part. The commit messages contain the prompts (excluding the code of source and target files), so they can be easily addressed like this:
 ```bash
-git log TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git log TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git log TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git log TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
-Note that the reasoning part is not mandatory; it could be avoided by not speciyfing any model with the reasoning trait in the configuration.
+Note that the reasoning part is not mandatory; it could be omitted by not speciyfing any model with the reasoning trait in the configuration.
 
 Review of the generated code:
 ```bash
-git diff TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git diff TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git diff TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git diff TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
 
-It looked like the `Qwen2.5-Coder-7B` result was closer to what is required.
+The `Qwen2.5-4B-Base` result looked closer to what is required.
 
 #### Provide Feedback
 Pointing of SymErgs attention to the use of `setUp` method as a best practice:
 ```bash
-git notes add -m "Use setUp method" Qwen2.5-Coder-7B_TestCase_capture_output
+git notes add -m "Use setUp method" Qwen3-4B-Base_TestCase_capture_output
 ```
 
 It has been seen that SymErgion started loadng coding models and generating code for the updated prompt.
-It took `Qwen2.5-Coder-7B` 99.7s to generate 81 new tokens and it took `granite-3.1-3b-a800m-base` 168.0s to generate 686 new tokens.
+It took `Qwen3-4B-Base` 107.7s to generate 265 new tokens and it took `granite-3.3-2b-base` 460.9s to generate 1625 new tokens.
 
 #### Verify the Results
 Verification of the prompt:
 ```bash
-git log TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git log TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git log TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git log TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
 It has been seen that new commits have the notes with last feedback as commit messages. Please note that when generating the response, they all combine into one prompt.
 
 Verification of the generated code:
 ```bash
-git diff TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git diff TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git diff TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git diff TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
 It has been seen that `setUp` method was used, but not in the expected way.
 
@@ -259,8 +254,8 @@ It has been seen that `setUp` method was used, but not in the expected way.
 Revoking of the last feedback.
 ```bash
 git notes
-git notes show f3f27311c19af99fd5aa9260305ef8961271a439
-git notes remove f3f27311c19af99fd5aa9260305ef8961271a439
+git notes show d77d76c4677bb98f5c26bc33dd13c16b8c897fd6
+git notes remove d77d76c4677bb98f5c26bc33dd13c16b8c897fd6
 ```
 
 Please note that second and third commands are dependent on the result of the first command.
@@ -270,50 +265,54 @@ It has been seen that SymErgs responces use cached results.
 #### Verify the Results
 Verification of the commits:
 ```bash
-git log TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git log TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git log TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git log TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
 It has been seen that a new commit "Revert: Use setUp method" appeared in both branches.
 
 Verification of the code:
 ```bash
-git diff TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git diff TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git diff TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git diff TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
 It has been seen that the cached generated code reappeared.
 
 #### Provide more specific feedback
 Pointing of SymErgs attention to the use of `setUp` method as a best practice in a more specific manner:
 ```bash
-git notes add -m "Use setUp for specifying function producing output to be caught" Qwen2.5-Coder-7B_TestCase_capture_output
+git notes add -m "Use setUp for specifying different functions producing output to be captured" Qwen3-4B-Base_TestCase_capture_output
 ```
 
 It has been seen that SymErgion starts loadng coding models and generating code for the updated prompt.
 
-It took `Qwen2.5-Coder-7B` 220.6s to generate 282 new tokens and it took `granite-3.1-3b-a800m-base` 171.7s to generate 643 new tokens.
+It took `Qwen3-4B-Base` 109.8s to generate 265 new tokens and it took `granite-3.3-2b-base` 208.8s to generate 753 new tokens.
 
 #### Verify the Results
 Verification of the prompt:
 ```bash
-git log TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git log TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git log TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git log TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
-It has been seen that new commits have the notes with the last feedback as commit messages. Please note that when generating the response, they all combine into one prompt.
+It has been seen that new commits have the notes with the last feedback as commit messages. Please note that when generating the response, they all notes are combined into one prompt.
 
 Verification of the generated code:
 ```bash
-git diff TestCase_capture_output..Qwen2.5-Coder-7B_TestCase_capture_output
-git diff TestCase_capture_output..granite-3.1-3b-a800m-base_TestCase_capture_output
+git diff TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
+git diff TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
 It has been seen that `setUp` method is used in the expected way.
 
 #### Last Changes
-`Qwen2.5-Coder-7B` repeated tested function code. Feedback to SymErgion could be provided or unnecessary code lines could be deleted manually. Considering that deleting is faster than writing feedback, it makes sense to do the last changes manually.
+`Qwen3-4B-Base` repeated tested function code. To resolve it, the feedback to SymErgion could be provided or unnecessary code lines could be deleted manually. Considering that deleting is faster than writing feedback, it makes sense to do the last changes manually.
+
+#### Verify TestCase
+Build symergion container with test tag to verify test correctness. It looked that there was one error in one of the tests that was easy to be overlooked during code review. It should be fixed manually or the last manual changes should be revert and the feedback regarding bug should be provided as a note.
+Once code is verified commit all manual changes as one commit.
 
 ### Overall remarks
-It is a good practice to maintain several configuration files with different sets of SLMs, based on your experience of which SLM shows better results for specific codebases. Enriching the prompt using reasoning model(s) could improve overall quality with less compute, though it is not the case for all sorts of tasks. Note ithat you can assign more than one reasoner to specific configurations. In that case, they will produce reasoning parts independently and the prompt will be enriched with all of them combined.
+It is a good practice to maintain several configuration files with different sets of SLMs, based on your experience of which SLM shows better results for specific codebases. Enriching the prompt using reasoning model(s) could improve overall quality with less compute, though it is not the case for all sorts of tasks. Note that you can assign more than one reasoner to specific configurations. In such case, they will produce reasoning parts independently and the prompt will be enriched with all of them combined.
 
-Two to three SymErgs might be a good mix. Running more models will unnecessarily increase the completion time and ammount of consumed computing resources. Running solo model would make your SymErgion more susceptible to weak areas within a single model, as different models have different strengths and weaknesses.
+Two to three coding SymErgs might be a good mix. Running more models will unnecessarily increase the completion time and ammount of consumed computational resources. Running solo model would make your SymErgion more susceptible to weak areas within a single model, as different models have different strengths and weaknesses.
 
 Do not use `git reset` for SymErg branches, SymErgions' workflow doesn't support consistent work with inconsistent SymErg branches.
 
@@ -423,7 +422,7 @@ If you find this work helpfull, feel free to give it a cite.
 		* trait
 	* Private Attributes:
 		* _checkpoint
-		* _cache_size
+		* _model_cache_size
 		* _response_cache_size
 		* _ntokens
 	* Methods:

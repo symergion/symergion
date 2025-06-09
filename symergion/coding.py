@@ -32,7 +32,7 @@ class SymErgionCoding(SymErgion):
 
         Raises:
             ValueError:
-                - if no cache_size is provided,
+                - if no model_cache_size is provided,
                 - if no response_cache_size is provided,
                 - if no ntokens is provided,
                 - if no task_branch_spec is provided,
@@ -43,8 +43,8 @@ class SymErgionCoding(SymErgion):
 
         self._repo = repo
 
-        if not config.cache_size:
-            raise ValueError("No cache_size is provided in config.")
+        if not config.model_cache_size:
+            raise ValueError("No model_cache_size is provided in config.")
         if not config.response_cache_size:
             raise ValueError("No response_cache_size is provided in config.")
         if not config.ntokens:
@@ -226,7 +226,7 @@ class SymErgionCoding(SymErgion):
             return self.symergs[symerg_names.index(checkpoint.get("name_or_path"))]
 
         symerg_config = {
-            "cache_size": self._config.cache_size,
+            "model_cache_size": self._config.model_cache_size,
             "response_cache_size": self._config.response_cache_size,
             "ntokens": self._config.ntokens
         }

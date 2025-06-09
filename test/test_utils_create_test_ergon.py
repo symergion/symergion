@@ -64,7 +64,7 @@ class TestCreateTestErgon(unittest.TestCase):
         """
         handler_config, test_case_template = get_test_config()
         self.assertEqual(handler_config, {
-            "cache_size": 1,
+            "model_cache_size": 1,
             "response_cache_size": 100,
             "ntokens": 128,
             "default_branch": "main",

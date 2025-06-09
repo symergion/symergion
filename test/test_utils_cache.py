@@ -1,29 +1,29 @@
 import unittest
 
 from utils import capture_output
-from utils import lru_cache
+from utils import in_memory_cache
 
 
 class TestLruCache(unittest.TestCase):
     """A test case for the LRU (Least Recently Used) Cache implementation.
-    This class tests the functionality of the `lru_cache` decorator by ensuring that
+    This class tests the functionality of the `in_memory_cache` decorator by ensuring that
     cached results are correctly returned without re-executing the function when
     the same arguments are provided again.
     """
 
     def setUp(self):
         """Set up the test environment.
-        Creates an instance of a class with a method decorated with `lru_cache`.
+        Creates an instance of a class with a method decorated with `in_memory_cache`.
         """
         class Simple():
-            """A class with a method decorated with `lru_cache`.
+            """A class with a method decorated with `in_memory_cache`.
             The method simulates a simple addition operation and
             prints a message indicating whether it is running.
             """
             def __init__(self):
                 self._cache_size = 1
 
-            @lru_cache("_cache_size")
+            @in_memory_cache("_cache_size")
             def add(self, a, b):
                 """A simple addition method with caching enabled.
 
@@ -44,7 +44,7 @@ class TestLruCache(unittest.TestCase):
 
         self.simple = Simple()
 
-    def test_lru_cache(self):
+    def test_in_memory_cache(self):
         """Test the LRU cache functionality.
         Verifies that the cached result is returned on subsequent calls
         with the same arguments, and
