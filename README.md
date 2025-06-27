@@ -71,21 +71,30 @@ Steps 2 and 3 (if necessary) should be repeated untill a satisfactory result is 
 ### Deployment
 
 #### Build Docker Image
-To deploy Symergion, get the Linux docker image of your preference, having git, Python>=3.10.13, PyTorch>=2.2.1, Transformers>=4.51.3 installed and pass it as a `docker build` command argument running in your symergion directory:
+To deploy Symergion, get the Linux docker image of your preference, having git, Python>=3.10.13, PyTorch>=2.2.1, Transformers>=4.51.3 installed.
+
+Make symergion.env file, add there the following environment variables:
 ```bash
-docker build --build-arg BASE_CONTAINER="image-of-your-preference" -t symergion:latest .
+BASE_CONTAINER="linux-image-of-your-preference"
+MODELS="/path/to/llms/to/be/used"
+REPO="/path/to/local/repository/to/be/working/on"
+```
+
+Pass symergion.env as an argument for `docker-compose` `build` command executed in your symergion directory:
+```bash
+docker-compose --env-file symergion.env build
 ```
 
 #### Configure Settings
 Store SymErgion settings in a JSON configuration file located in the directory where LLMs checkpoints are saved.
 
-Example of config settings (specific SLMs are selected for illustration purposes):
+Example of config settings (specific SLMs are used for illustration purposes, you could form your own list based on your preferences):
 ```json
 {
   "idle_cores": 4,
   "model_cache_size": 1,
   "response_cache_size": 100,
-  "ntokens": 128,
+  "ntokens": 512,
   "default_branch": "main",
   "task_branch_spec": "task_branch:[\\s]*([\\p{L}\\p{N}_\\-\\.\\/]+)",
   "checkpoints": [
@@ -124,7 +133,7 @@ Example of config settings (specific SLMs are selected for illustration purposes
 
 Here:
 ##### `idle_cores`
-Specifies the quantity of CPU cores that will not be allocated to Pytorch threads. It should be set based on balancing CPU resource needs for other tasks, your CPU tolerance to overheating and expected generation speed.
+Specifies the quantity of CPU cores that will not be allocated to Pytorch threads. It should be specified as a result of balancing of other tasks needs in CPU resource, your CPU tolerance to overheating and speed of generation.
 
 ##### `model_cache_size`
 Specifies the number of SLMs to be cached.
@@ -139,7 +148,7 @@ max_new_tokens = max_position_embeddings - (max_position_embeddings - ntokens) *
 ```
 
 ##### `default_branch`
-Is the name of the Git repository's default branch.
+Is a Git repository's default branch name.
 
 ##### `task_branch_spec`
 Is the task branch name specification.
@@ -161,7 +170,7 @@ Specifies the sequence of tokens marking the start of the reasoning section (app
 Specifies the sequence of tokens marking the end of the reasoning section (applies only to the "reasoning" trait)
 
 ##### `templates`
-Supported Ergon types templates. Current includes only "TestCase".
+Supported Ergon types templates. "TestCase" Ergon type is used as an example.
 
 ###### `params`
 Specifies the format used to define source and destination file names in notes.
@@ -173,50 +182,51 @@ Is the call-to-action part of the initial prompt.
 Starting part of code to be generated.
 
 #### Run
+Add `SYMERGION_CONFIG` environment variable into `symergion.env`, i.e.
+```bash
+SYMERGION_CONFIG="short_code_symergs.json"
+```
+Note: whenever you need to run SymErgion with new list of models, specify them in new config json file and update `SYMERGION_CONFIG` value in `symergion.env`.
 Run the built container:
 ```bash
-docker run --rm -itd -v /path/to/llms/:/models -v /path/to/local/repository:/repo --name symergion symergion:latest
+docker-compose --env-file symergion.env up
 ```
-
-Attach the running container:
-```bash
-docker attach symergion
-```
-
-Input symergion config file, i.e., `short_code_symergs.json` containing the configuration from the above sample.
-
-Once SymErgion is up and running, you will see `Observing /repo/.git/logs/refs`
+Once SymErgion is up and running, you will see `Attaching to core-1`
 
 ### Usage examples
 Let's have a look at one example of working with the copy of SymErgion repository.
 
 #### Create Ergon Branch
-Creation of a feature branch for the `capture_output` utility unittest generation.
+Create feature branch for the `capture_output` utility unittest generation.
 
-Based on our configuration file, the branch prefix should be `TestCase`, so the feature branch has been created accordingly:
+Based on used configuration file, the branch prefix should be `TestCase`, so the feature branch to be created accordingly:
 ```bash
 git branch TestCase_capture_output
 ```
 
 #### Annotate Ergon Branch with Initial Note
-Annotation of the `TestCase_capture_output` branch with an initial note. Based on our configuration file, this should be:
+Annotate the `TestCase_capture_output` branch with an initial note. Based on our configuration file, this should be:
 ```bash
 git notes add -m "task_branch: TestCase_capture_output, source: utils/capture_output.py, destination: test_capture_output.py" TestCase_capture_output
 ```
-It has been seen that model `Qwen3-1.7B` was loaded and reasoning was generated based on the cooked prompt. Note that the cooked prompt is enriched with the code from the source and destination (if exists) files. In my case, it took `Qwen3-1.7B` 106.1s to generate 744 new tokens. The reasoning part was used to enrich the prompt.
+It has been seen that model `Qwen3-1.7B` was loaded and reasoning was generated based on the cooked prompt. Note that the cooked prompt is enriched with the code from the source and destination (if exists) files. In my case, it took `Qwen3-1.7B` 112.5s to generate 744 new tokens. The reasoning part was used to enrich the prompt.
 
 Then it has been seen that models `Qwen3-4B-Base` and `granite-3.3-2b-base` are being loaded and started generating responses for the given enriched prompt.
-It took `Qwen3-4B-Base` 165.7s to generate 406 new tokens and it took `granite-3.3-2b-base` 488.1s to generate 1620 new tokens.
+It took `Qwen3-4B-Base` 880.0s to generate 1541 new tokens and it took `granite-3.3-2b-base` 486.5s to generate 1679 new tokens.
 
 #### Review Results
-Once generation is completed it has been seen that SymErg branches `Qwen3-4B-Base_TestCase_capture_output` and `granite-3.3-2b-base_TestCase_capture_output` were created by SymErgion.
+Once generation is completed, verify branches created:
+```bash
+git branch
+```
+It has been seen that SymErg branches `Qwen3-4B-Base_TestCase_capture_output` and `granite-3.3-2b-base_TestCase_capture_output` were created by SymErgion.
 
-The review of the results for the both models, starts with prompts cooked and enriched with the reasoning part. The commit messages contain the prompts (excluding the code of source and target files), so they can be easily addressed like this:
+The review of the results for the both models starts with prompts cooked and enriched with the reasoning part. The commit messages contain the prompts (excluding the code of source and target files), so they can be easily addressed like this:
 ```bash
 git log TestCase_capture_output..Qwen3-4B-Base_TestCase_capture_output
 git log TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 ```
-Note that the reasoning part is not mandatory; it could be omitted by not speciyfing any model with the reasoning trait in the configuration.
+Note that the reasoning part is not mandatory; it could be omitted by not speciyfing any model with the reasoning trait in the configuration. However, often it allows to get better result.
 
 Review of the generated code:
 ```bash
@@ -227,13 +237,14 @@ git diff TestCase_capture_output..granite-3.3-2b-base_TestCase_capture_output
 The `Qwen2.5-4B-Base` result looked closer to what is required.
 
 #### Provide Feedback
-Pointing of SymErgs attention to the use of `setUp` method as a best practice:
+Pointing of SymErgs attention to the use of `setUp` method as a best practice.
+Annotate the branch with better result for that:
 ```bash
 git notes add -m "Use setUp method" Qwen3-4B-Base_TestCase_capture_output
 ```
 
 It has been seen that SymErgion started loadng coding models and generating code for the updated prompt.
-It took `Qwen3-4B-Base` 107.7s to generate 265 new tokens and it took `granite-3.3-2b-base` 460.9s to generate 1625 new tokens.
+It took `Qwen3-4B-Base` 110.3s to generate 247 new tokens and it took `granite-3.3-2b-base` 437.8s to generate 1684 new tokens.
 
 #### Verify the Results
 Verification of the prompt:
@@ -254,8 +265,8 @@ It has been seen that `setUp` method was used, but not in the expected way.
 Revoking of the last feedback.
 ```bash
 git notes
-git notes show d77d76c4677bb98f5c26bc33dd13c16b8c897fd6
-git notes remove d77d76c4677bb98f5c26bc33dd13c16b8c897fd6
+git notes show 1e7f6e22104a28ab33fca3b34ca9c325a33f905d
+git notes remove 1e7f6e22104a28ab33fca3b34ca9c325a33f905d
 ```
 
 Please note that second and third commands are dependent on the result of the first command.
@@ -285,7 +296,7 @@ git notes add -m "Use setUp for specifying different functions producing output 
 
 It has been seen that SymErgion starts loadng coding models and generating code for the updated prompt.
 
-It took `Qwen3-4B-Base` 109.8s to generate 265 new tokens and it took `granite-3.3-2b-base` 208.8s to generate 753 new tokens.
+It took `Qwen3-4B-Base` 114.4s to generate 266 new tokens and it took `granite-3.3-2b-base` 462.0s to generate 1692 new tokens.
 
 #### Verify the Results
 Verification of the prompt:
@@ -306,10 +317,21 @@ It has been seen that `setUp` method is used in the expected way.
 `Qwen3-4B-Base` repeated tested function code. To resolve it, the feedback to SymErgion could be provided or unnecessary code lines could be deleted manually. Considering that deleting is faster than writing feedback, it makes sense to do the last changes manually.
 
 #### Verify TestCase
-Build symergion container with test tag to verify test correctness. It looked that there was one error in one of the tests that was easy to be overlooked during code review. It should be fixed manually or the last manual changes should be revert and the feedback regarding bug should be provided as a note.
+Run linters of your choice on the generated code.
+Build the SymErgion image with the `test` tag to verify correctness of the written tests.
+```bash
+docker build --file Dockerfile.core --build-arg BASE_CONTAINER="image-of-your-preference" -t symergion:test .
+```
+If any error, it should be fixed manually or the last manual changes should be revert and the feedback regarding bug should be provided as a note.
+
 Once code is verified commit all manual changes as one commit.
 
-### Overall remarks
+#### Stop SymErgion
+```bash
+docker-compose --env-file symergion.env down
+```
+
+### General remarks
 It is a good practice to maintain several configuration files with different sets of SLMs, based on your experience of which SLM shows better results for specific codebases. Enriching the prompt using reasoning model(s) could improve overall quality with less compute, though it is not the case for all sorts of tasks. Note that you can assign more than one reasoner to specific configurations. In such case, they will produce reasoning parts independently and the prompt will be enriched with all of them combined.
 
 Two to three coding SymErgs might be a good mix. Running more models will unnecessarily increase the completion time and ammount of consumed computational resources. Running solo model would make your SymErgion more susceptible to weak areas within a single model, as different models have different strengths and weaknesses.

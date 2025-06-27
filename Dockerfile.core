@@ -1,5 +1,6 @@
 # Use docker image of your preference with git, Python>=3.10.13, PyTorchi>=2.2.1, Transformers>=4.50.3 installed
 ARG BASE_CONTAINER
+
 FROM ${BASE_CONTAINER}
 
 # Copy Symergion code into container

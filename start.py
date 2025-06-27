@@ -9,6 +9,7 @@ The script also manages the number of CPU cores used by PyTorch for parallel pro
 """
 
 import os
+import sys
 import time
 import torch
 
@@ -28,8 +29,8 @@ DEFAULT_BRANCH = "main"
 repo = Repo(REPO, DEFAULT_BRANCH)
 print(f"{repo} is instantiated for {REPO} with default branch {DEFAULT_BRANCH}")
 
-# Prompt user for the SymErgion configuration file
-symergion_config_file = input("Input symergion config file: ")
+# Get SymErgion configuration file from parameter passed into script
+symergion_config_file = sys.argv[1]
 
 # Load the configuration from the specified JSON file
 symergion_config = Config.from_json(f"/models/{symergion_config_file}")

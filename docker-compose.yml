@@ -1,0 +1,13 @@
+services:
+  # SymErgion Service
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile.core
+      args:
+        - BASE_CONTAINER=${BASE_CONTAINER}
+        - SYMERGION_CONFIG=${SYMERGION_CONFIG}
+    volumes:
+      - ${MODELS}:/models
+      - ${REPO}:/repo
+    command: ["${SYMERGION_CONFIG}"]
